@@ -1,0 +1,21 @@
+#chat-display,
+#chat-name-list {
+  display: inline-block;
+  max-height: 400px;
+  min-height: 400px;
+  overflow-y: scroll;
+}
+
+.alert,
+.btn,
+#chat-display,
+#chat-message,
+#chat-name,
+#chat-name-list,
+#chat-status {
+  margin: 10px;
+}
+
+li {
+  list-style-type: none;
+}
