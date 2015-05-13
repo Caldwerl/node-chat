@@ -52,14 +52,14 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
 
 
     //Populate chat history
-    collection.find().limit(50).toArray(function (err, response) {
+    collection.find().sort({$natural:-1}).limit(50).toArray(function (err, response) {
 
       if (err) {
         sendStatus({category: "alert-danger", message: 'Error fetching messages'});
       }
 
       //Populates top 50 chatLog history and welcome message only to new client
-      io.to(socket.id).emit('chat message', response);
+      io.to(socket.id).emit('chat message', response.reverse());
       io.to(socket.id).emit('chat message', {name: 'Server', message: welcomeMsg});
     });
 
@@ -94,9 +94,9 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
     //Logic for disconnect, removes user from userList and updates connection counter
     socket.on('disconnect', function () {
 
+      sendConn(userList.length-1);
       io.emit('disconnect', userList[userIndex]);
       userList.splice(userIndex, 1);
-      sendConn(userList.length);
     });
   });
 });

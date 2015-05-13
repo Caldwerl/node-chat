@@ -6,14 +6,8 @@
   overflow-y: scroll;
 }
 
-.alert,
-.btn,
-#chat-display,
-#chat-message,
-#chat-name,
-#chat-name-list,
-#chat-status {
-  margin: 10px;
+.alert {
+  margin-bottom: 0px;
 }
 
 li {

@@ -19,7 +19,7 @@ $msgForm.submit(function () {
 
   if (!whitespacePattern.test($msg.val())) {
 
-    socket.emit('chat message', ({name: $name.val(), message: $msg.val()}));
+    socket.emit('chat message', ({name: whitespacePattern.test($name.val()) ? nameOld : $name.val(), message: $msg.val()}));
   }
 
   $msg.val('');
@@ -38,6 +38,8 @@ $nameForm.submit(function () {
 
 
 socket.on('populate names', function (names) {
+
+  $nameList.children().remove();
 
   names.forEach(function(name) {
 
@@ -81,12 +83,12 @@ socket.on('status', function (data) {
 
   alertCur = data.category;
 
-  $status.toggleClass(alertOld).toggleClass(alertCur);
+  $status.removeClass(alertOld).addClass(alertCur);
   $statusTxt.text(data.message);
 
   setTimeout(function () {
 
-    $status.toggleClass(alertOld).toggleClass(alertCur);
+    $status.addClass(alertOld).removeClass(alertCur);
     $statusTxt.text(statusOld);
   }, 5000);
 });
@@ -105,7 +107,7 @@ socket.on('disconnect', function(name) {
 
   if (name != 'transport close') {
 
-    $chat.append($('<li>').text("Server: " + name + " has disconnected."));
-    $('#chat-name-list li:contains(' + name + ')').filter(':first').remove();
+    $chat.prepend($('<li>').text("Server: " + name + " has disconnected."));
+    $('#chat-name-list li:contains(' + name + ')').filter(':first').fadeOut().remove();
   }
 });
