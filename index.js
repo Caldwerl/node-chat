@@ -37,14 +37,14 @@ $nameForm.submit(function () {
 
 
 
-socket.on('populate names', function (names) {
+socket.on('populate names', function (userList) {
 
   $nameList.children().remove();
 
-  names.forEach(function(name) {
+  for (var user in userList) {
 
-    $nameList.append($('<li>').text(name));
-  });
+    $nameList.append($('<li>').text(userList[user]));
+  }
 });
 
 
@@ -108,6 +108,6 @@ socket.on('disconnect', function(name) {
   if (name != 'transport close') {
 
     $chat.prepend($('<li>').text("Server: " + name + " has disconnected."));
-    $('#chat-name-list li:contains(' + name + ')').filter(':first').fadeOut().remove();
+    $('#chat-name-list li:contains(' + name + ')').filter(':first').remove();
   }
 });

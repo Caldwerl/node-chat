@@ -6,7 +6,8 @@ var mongo = require('mongodb').MongoClient;
 var io = require('socket.io')(server);
 var port = 8080;
 
-var userList = [];
+var userList = {};
+var userCount = 0;
 
 var welcomeMsg = "Welcome to the Empty Datacube. Messages below this are old.";
 
@@ -29,9 +30,10 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
     var collection = db.collection('chatLog');
 
     //All new clients are intialized with a name of 'Unknown'
-    //Push new client name to userList and initialize this clients userIndex
-    userList.push('Unknown');
-    var userIndex = userList.length - 1;
+    //Add new client name to userList
+    userList[socket.id] = 'Unknown';
+    userCount += 1;
+
 
     //Function for setting the status alert
     var sendStatus = function (data) {
@@ -40,14 +42,14 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
 
     //Function for updating the number of connected clients
     var sendConn = function (data) {
-      socket.emit('conn update', data);
+      io.emit('conn update', data);
     };
 
 
 
     //Populate connected users
     io.to(socket.id).emit('populate names', userList);
-    sendConn(userList.length);
+    sendConn(userCount);
 
 
 
@@ -64,8 +66,8 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
     });
 
     //Sends connection message and adds new client to every other client
-    socket.broadcast.emit('chat message', {name: userList[userIndex], message: "has connected."});
-    socket.broadcast.emit('add user', userList[userIndex]);
+    socket.broadcast.emit('chat message', {name: userList[socket.id], message: "has connected."});
+    socket.broadcast.emit('add user', userList[socket.id]);
 
 
     //Logic for changing user's name
@@ -75,10 +77,7 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
       io.emit('name change', data);
       sendStatus({category: "alert-success", message: 'Name changed'});
 
-      if (userList.indexOf(data.oldName) >= 0) {
-
-        userList[userList.indexOf(data.oldName)] = data.name;
-      }
+      userList[data.socketID] = data.name;
     });
 
 
@@ -94,9 +93,9 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
     //Logic for disconnect, removes user from userList and updates connection counter
     socket.on('disconnect', function () {
 
-      sendConn(userList.length-1);
-      io.emit('disconnect', userList[userIndex]);
-      userList.splice(userIndex, 1);
+      io.emit('disconnect', userList[socket.id]);
+      delete userList[socket.id];
+      sendConn(userCount -= 1);
     });
   });
 });
