@@ -27,7 +27,8 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
 
   io.on('connection', function (socket) {
 
-    var collection = db.collection('chatLog');
+    var collectionChat = db.collection('chatLog');
+    var collectionServer = db.collection('serverLog');
 
     //All new clients are intialized with a name of 'Unknown'
     //Add new client name to userList
@@ -54,7 +55,7 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
 
 
     //Populate chat history
-    collection.find().sort({$natural:-1}).limit(50).toArray(function (err, response) {
+    collectionChat.find().sort({$natural:-1}).limit(50).toArray(function (err, response) {
 
       if (err) {
         sendStatus({category: "alert-danger", message: 'Error fetching messages'});
@@ -66,13 +67,15 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
     });
 
     //Sends connection message and adds new client to every other client
-    socket.broadcast.emit('chat message', {name: userList[socket.id], message: "has connected."});
+    collectionServer.insert({socketID: socket.id, name: userList[socket.id], message: 'Connect', date: new Date().toString()});
+    socket.broadcast.emit('chat message', {name: 'Server', message: userList[socket.id] + " has connected."});
     socket.broadcast.emit('add user', userList[socket.id]);
 
 
     //Logic for changing user's name
     socket.on('name change', function(data) {
 
+      collectionServer.insert({socketID: socket.id, name: data.oldName, message: 'Name Change to ' + data.name, date: new Date().toString()});
       io.emit('chat message', {name: "Server", message: data.oldName + " is now known as " + data.name});
       io.emit('name change', data);
       sendStatus({category: "alert-success", message: 'Name changed'});
@@ -84,7 +87,7 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
     //Logic for inserting into the db and sending a new message
     socket.on('chat message', function (data) {
 
-      collection.insert({socketID: socket.id, name: data.name, message: data.message, date: new Date().toString()});
+      collectionChat.insert({socketID: socket.id, name: data.name, message: data.message, date: new Date().toString()});
       io.emit('chat message', {name: data.name, message: data.message});
       sendStatus({category: "alert-success", message: 'Message sent'});
     });
@@ -93,6 +96,7 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
     //Logic for disconnect, removes user from userList and updates connection counter
     socket.on('disconnect', function () {
 
+      collectionServer.insert({socketID: socket.id, name: userList[socket.id], message: 'Disconnect', date: new Date().toString()});
       io.emit('disconnect', userList[socket.id]);
       delete userList[socket.id];
       sendConn(userCount -= 1);
