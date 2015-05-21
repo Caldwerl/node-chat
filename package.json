@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
+    "crypto-js": "*",
     "express": "~4.0.0",
     "mongodb": "*",
     "serve-favicon": "~2.1.3",

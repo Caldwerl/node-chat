@@ -6,6 +6,10 @@
   overflow-y: scroll;
 }
 
+#chat-name {
+  display: none;
+}
+
 .alert {
   margin-bottom: 0px;
 }

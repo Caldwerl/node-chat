@@ -11,18 +11,28 @@
 <body>
   <div class="container">
     <div class="row">
-      <div id="chat-status" class="alert alert-info col-xs-12 col-md-4 text-center" role="alert">Status: <span>Idle</span>
+
+      <div id="chat-status" class="alert alert-info col-xs-6 col-md-4 text-center" role="alert">Status: <span>Idle</span>
       </div>
+
       <div id="chat-count" class="alert alert-info col-xs-6 col-md-4 text-center" role="alert">Connected <span class="badge">0</span>
       </div>
-      <form id="name-form" action="" autocomplete="off">
-        <input class="input-lg col-xs-6 col-md-4" type="text" id="chat-name" placeholder="Enter name" />
+
+      <form id="login-form" action="" autocomplete="off">
+        <div class="col-xs-12 col-md-4">
+
+          <input class="input input-lg" type="text" id="login-name" maxlength="20" placeholder="Enter name" required />
+          <input class="input input-lg" type="password" id="login-pass" maxlength="20" placeholder="Enter password" required />
+          <input class="btn btn-info" type="submit" value="Login">
+        </div>
       </form>
+
+      <div id="chat-name" class="alert alert-info col-xs-6 col-md-4 text-center" role="alert"><span></span>
+      </div>
     </div>
 
     <div class="row">
       <div id="chat-display" class="col-xs-9 blog-main"></div>
-      <div class="text-center col-xs-3">Users</div>
       <div id="chat-name-list" class="col-xs-3"></div>
     </div>
   </div>

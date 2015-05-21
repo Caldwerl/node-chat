@@ -4,6 +4,7 @@ var server = require('http').Server(app);
 var favicon = require('serve-favicon');
 var mongo = require('mongodb').MongoClient;
 var io = require('socket.io')(server);
+var crypto = require("crypto-js");
 var port = 8080;
 
 var userList = {};
@@ -29,12 +30,7 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
 
     var collectionChat = db.collection('chatLog');
     var collectionServer = db.collection('serverLog');
-
-    //All new clients are intialized with a name of 'Unknown'
-    //Add new client name to userList
-    userList[socket.id] = 'Unknown';
-    userCount += 1;
-
+    var collectionUsers = db.collection('users');
 
     //Function for setting the status alert
     var sendStatus = function (data) {
@@ -46,43 +42,85 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
       io.emit('conn update', data);
     };
 
+    //Function for new connection
+    var newConn = function (data) {
+
+      //Add new client name to userList
+      userCount += 1;
+
+      //Populate connected users
+      io.to(socket.id).emit('populate names', userList);
+      sendConn(userCount);
+
+      //Populate chat history
+      collectionChat.find().sort({$natural:-1}).limit(50).toArray(function (err, response) {
+
+        if (err) {
+          sendStatus({category: "alert-danger", message: 'Error fetching messages'});
+        }
+
+        //Populates top 50 chatLog history and welcome message only to new client
+        io.to(socket.id).emit('chat message', response.reverse());
+        io.to(socket.id).emit('chat message', {name: 'Server', message: welcomeMsg});
+      });
+
+      //Sends connection message and adds new client to every other client
+      collectionServer.insert({socketID: socket.id, name: userList[socket.id], message: 'Connect', date: new Date().toString()});
+      socket.emit('chat message', {name: 'Server', message: userList[socket.id] + " has connected."});
+      socket.broadcast.emit('add user', userList[socket.id]);
+      sendStatus({category: "alert-success", message: 'Login Successful'});
+
+      //Removes login form and sets clients name in site
+      io.to(socket.id).emit('set name', {name: userList[socket.id]});
+    };
 
 
-    //Populate connected users
-    io.to(socket.id).emit('populate names', userList);
-    sendConn(userCount);
 
 
+    socket.on('login', function (data) {
 
-    //Populate chat history
-    collectionChat.find().sort({$natural:-1}).limit(50).toArray(function (err, response) {
+      //Check the user collection for any matching records
+      collectionUsers.find({name_lower: data.name.toLowerCase()}).toArray(function (err, response) {
 
-      if (err) {
-        sendStatus({category: "alert-danger", message: 'Error fetching messages'});
-      }
+        if (err) {
+            sendStatus({category: "alert-danger", message: 'Error on Login'});
+        }
 
-      //Populates top 50 chatLog history and welcome message only to new client
-      io.to(socket.id).emit('chat message', response.reverse());
-      io.to(socket.id).emit('chat message', {name: 'Server', message: welcomeMsg});
+        //If an existing user record is found, check the password
+        if (response.length == 1) {
+
+          //If the provided password is correct,
+          //allow access and add user to connected list
+          if (crypto.SHA256(response[0].salt + data.pass).toString() === response[0].pass) {
+
+            userList[socket.id] = response[0].name;
+
+            newConn(response[0].name);
+
+          //Else deny access and request another attempt
+          } else {
+
+            sendStatus({category: "alert-danger", message: 'Invalid Login'});
+          }
+
+        //If a user is not found, create a salt, hash the password
+        //and create a new user record with provided information
+        } else {
+
+          var salt = crypto.lib.WordArray.random(256/8).toString();
+
+          var hash = crypto.SHA256(salt + data.pass).toString();
+
+          collectionUsers.insert({name: data.name, pass: hash, salt: salt, name_lower: data.name.toLowerCase()});
+
+          userList[socket.id] = data.name;
+
+          newConn(data.name);
+        }
+
+      });
+
     });
-
-    //Sends connection message and adds new client to every other client
-    collectionServer.insert({socketID: socket.id, name: userList[socket.id], message: 'Connect', date: new Date().toString()});
-    socket.broadcast.emit('chat message', {name: 'Server', message: userList[socket.id] + " has connected."});
-    socket.broadcast.emit('add user', userList[socket.id]);
-
-
-    //Logic for changing user's name
-    socket.on('name change', function(data) {
-
-      collectionServer.insert({socketID: socket.id, name: data.oldName, message: 'Name Change to ' + data.name, date: new Date().toString()});
-      io.emit('chat message', {name: "Server", message: data.oldName + " is now known as " + data.name});
-      io.emit('name change', data);
-      sendStatus({category: "alert-success", message: 'Name changed'});
-
-      userList[data.socketID] = data.name;
-    });
-
 
     //Logic for inserting into the db and sending a new message
     socket.on('chat message', function (data) {
