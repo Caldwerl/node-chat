@@ -1,25 +1,27 @@
 var socket = io();
 
-var $name = $('#chat-name');
+var $name = $('#login-name');
+var $pass = $('#login-pass');
+var $dispNameTxt = $('#chat-name span');
+var $dispName = $('#chat-name');
 var $chat = $('#chat-display');
 var $msg = $('#chat-message');
 var $nameList = $('#chat-name-list');
 var $status = $('#chat-status');
 var $statusTxt = $('#chat-status span');
-var $nameForm = $('#name-form');
+var $loginForm = $('#login-form');
 var $msgForm = $('#msg-form');
 var $countTxt = $('#chat-count span');
 var whitespacePattern = /^\s*$/;
 var statusOld = $statusTxt.text();
 var alertOld = "alert-info";
 var alertCur;
-var nameOld = "Unknown";
 
 $msgForm.submit(function () {
 
   if (!whitespacePattern.test($msg.val())) {
 
-    socket.emit('chat message', ({name: whitespacePattern.test($name.val()) ? nameOld : $name.val(), message: $msg.val()}));
+    socket.emit('chat message', ({name: $dispName.val(), message: $msg.val()}));
   }
 
   $msg.val('');
@@ -27,14 +29,15 @@ $msgForm.submit(function () {
   return false;
 });
 
-$nameForm.submit(function () {
+$loginForm.submit(function () {
 
-  socket.emit('name change', (whitespacePattern.test($name.val()) ? {name: 'Unknown'} : {name: $name.val(), oldName: nameOld, socketID: socket.id}));
-  nameOld = $name.val();
+  if (!whitespacePattern.test($name.val()) && !whitespacePattern.test($pass.val())) {
+
+    socket.emit('login', ({name: $name.val().trim(), pass: $pass.val().trim()}));
+  }
 
   return false;
 });
-
 
 
 socket.on('populate names', function (userList) {
@@ -48,11 +51,6 @@ socket.on('populate names', function (userList) {
 });
 
 
-
-socket.on('name change', function (data) {
-
-    $('#chat-name-list li:contains(' + data.oldName + ')').filter(':first').text(data.name);
-});
 
 
 
@@ -100,6 +98,14 @@ socket.on('conn update', function (data) {
   $countTxt.text(data);
 });
 
+
+
+socket.on('set name', function (data) {
+
+  $dispNameTxt.text(data.name);
+  $loginForm.hide();
+  $dispName.show();
+});
 
 
 
