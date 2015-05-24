@@ -45,11 +45,9 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
     //Function for new connection
     var newConn = function (data) {
 
-      //Add new client name to userList
-      userCount += 1;
-
       //Populate connected users
       io.to(socket.id).emit('populate names', userList);
+      userCount += 1;
       sendConn(userCount);
 
       //Populate chat history
