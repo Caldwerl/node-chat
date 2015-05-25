@@ -32,6 +32,64 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
     var collectionServer = db.collection('serverLog');
     var collectionUsers = db.collection('users');
 
+    //Function to create a random hex color value for user names
+    var randomColor = function () {
+
+      var hue = Math.random();
+      var goldRatio = 0.618033988749895;
+      var red, green, blue = 255;
+      var h_i = Math.floor(hue * 6);
+      var sat = 0.5;
+      var val = 0.95;
+      var f = hue * 6 - h_i;
+      var p = val * (1 - sat);
+      var q = val * (1 - f * sat);
+      var t = val * (1 - (1 - f) * sat);
+
+      hue += goldRatio;
+      hue %= 1;
+
+      switch (h_i) {
+
+        case 0:
+          red = val;
+          green = t;
+          blue = p;
+          break;
+        case 1:
+          red = q;
+          green = val;
+          blue = p;
+          break;
+        case 2:
+          red = p;
+          green = val;
+          blue = t;
+          break;
+        case 3:
+          red = p;
+          green = q;
+          blue = val;
+          break;
+        case 4:
+          red = t;
+          green = p;
+          blue = val;
+          break;
+        case 5:
+          red = val;
+          green = p;
+          blue = q;
+          break;
+      }
+
+      red = Math.floor(red * 256).toString(16);
+      green = Math.floor(green * 256).toString(16);
+      blue = Math.floor(blue * 256).toString(16);
+
+      return '#' + red + green + blue;
+    }
+
     //Function for setting the status alert
     var sendStatus = function (data) {
       socket.emit('status', data);
@@ -63,13 +121,13 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
       });
 
       //Sends connection message and adds new client to every other client
-      collectionServer.insert({socketID: socket.id, name: userList[socket.id], message: 'Connect', date: new Date().toString()});
-      socket.emit('chat message', {name: 'Server', message: userList[socket.id] + " has connected."});
+      collectionServer.insert({socketID: socket.id, name: userList[socket.id].name, message: 'Connect', date: new Date().toString()});
+      socket.emit('chat message', {name: 'Server', message: userList[socket.id].name + " has connected."});
       socket.broadcast.emit('add user', userList[socket.id]);
       sendStatus({category: "alert-success", message: 'Login Successful'});
 
       //Removes login form and sets clients name in site
-      io.to(socket.id).emit('set name', {name: userList[socket.id]});
+      io.to(socket.id).emit('set name', userList[socket.id]);
     };
 
 
@@ -91,7 +149,7 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
           //allow access and add user to connected list
           if (crypto.SHA256(response[0].salt + data.pass).toString() === response[0].pass) {
 
-            userList[socket.id] = response[0].name;
+            userList[socket.id] = {name: response[0].name, color: randomColor()};
 
             newConn(response[0].name);
 
@@ -111,7 +169,7 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
 
           collectionUsers.insert({name: data.name, pass: hash, salt: salt, name_lower: data.name.toLowerCase()});
 
-          userList[socket.id] = data.name;
+          userList[socket.id] = {name: data.name, color: randomColor()};
 
           newConn(data.name);
         }
@@ -124,7 +182,7 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
     socket.on('chat message', function (data) {
 
       collectionChat.insert({socketID: socket.id, name: data.name, message: data.message, date: new Date().toString()});
-      io.emit('chat message', {name: data.name, message: data.message});
+      io.emit('chat message', {name: data.name, message: data.message, color: userList[socket.id].color});
       sendStatus({category: "alert-success", message: 'Message sent'});
     });
 
@@ -132,10 +190,13 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
     //Logic for disconnect, removes user from userList and updates connection counter
     socket.on('disconnect', function () {
 
-      collectionServer.insert({socketID: socket.id, name: userList[socket.id], message: 'Disconnect', date: new Date().toString()});
-      io.emit('disconnect', userList[socket.id]);
-      delete userList[socket.id];
-      sendConn(userCount -= 1);
+      //Checks if the user disconnecting has logged in, if not, no action needed
+      if (userList[socket.id].name != undefined) {
+        collectionServer.insert({socketID: socket.id, name: userList[socket.id].name, message: 'Disconnect', date: new Date().toString()});
+        io.emit('disconnect', userList[socket.id]);
+        delete userList[socket.id];
+        sendConn(userCount -= 1);
+      }
     });
   });
 });

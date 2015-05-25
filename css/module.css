@@ -1,13 +1,20 @@
 #chat-display,
 #chat-name-list {
   display: inline-block;
+  font-weight: bold;
   max-height: 400px;
   min-height: 400px;
   overflow-y: scroll;
 }
 
+#chat-display span{
+  color: #333;
+  font-weight: normal;
+}
+
 #chat-name {
   display: none;
+  font-weight: bold;
 }
 
 .alert {
