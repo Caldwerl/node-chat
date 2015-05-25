@@ -21,7 +21,7 @@ $msgForm.submit(function () {
 
   if (!whitespacePattern.test($msg.val())) {
 
-    socket.emit('chat message', ({name: $dispName.val(), message: $msg.val()}));
+    socket.emit('chat message', ({name: $dispNameTxt.text(), message: $msg.val()}));
   }
 
   $msg.val('');
@@ -46,7 +46,7 @@ socket.on('populate names', function (userList) {
 
   for (var user in userList) {
 
-    $nameList.append($('<li>').text(userList[user]));
+    $nameList.append($('<li>').text(userList[user].name).css('color', userList[user].color));
   }
 });
 
@@ -60,19 +60,19 @@ socket.on('chat message', function (data){
 
     for (var i = 0; i < data.length; i++) {
 
-      $chat.prepend($('<li>').text(data[i].name + ": " + data[i].message));
+      $chat.prepend($('<li>').text(data[i].name).append($('<span>').text(": " + data[i].message)));
     }
   } else if (data.message != undefined) {
 
-    $chat.prepend($('<li>').text(data.name + ": " + data.message));
+    $chat.prepend($('<li>').text(data.name).css('color', data.color).append($('<span>').text(": " + data.message)));
   }
 });
 
 
 
-socket.on('add user', function (name) {
+socket.on('add user', function (data) {
 
-  $nameList.append($('<li>').text(name));
+  $nameList.append($('<li>').text(data.name).css('color', data.color));
 });
 
 
@@ -109,11 +109,11 @@ socket.on('set name', function (data) {
 
 
 
-socket.on('disconnect', function(name) {
+socket.on('disconnect', function(data) {
 
-  if (name != 'transport close') {
+  if (data.name != 'transport close') {
 
-    $chat.prepend($('<li>').text("Server: " + name + " has disconnected."));
-    $('#chat-name-list li:contains(' + name + ')').filter(':first').remove();
+    $chat.prepend($('<li>').text("Server: " + data.name + " has disconnected."));
+    $('#chat-name-list li:contains(' + data.name + ')').filter(':first').remove();
   }
 });
