@@ -1,10 +1,10 @@
 var express = require('express');
 var app = express();
 var server = require('http').Server(app);
-var favicon = require('serve-favicon');
-var mongo = require('mongodb').MongoClient;
 var io = require('socket.io')(server);
-var crypto = require("crypto-js");
+var mongo = require('mongodb').MongoClient;
+var favicon = require('serve-favicon');
+var secureLogin = require('./secure-login');
 var randomColor = require('./random-color');
 
 'use strict';
@@ -80,45 +80,18 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
 
     socket.on('login', function (data) {
 
-      //Check the user collection for any matching records
-      collectionUsers.find({name_lower: data.name.toLowerCase()}).toArray(function (err, response) {
+      secureLogin(collectionUsers, data, function (err, result) {
 
-        if (err) {
-            sendStatus({category: "alert-danger", message: 'Error on Login'});
+        if (result.functionName === 'sendStatus') {
+
+          sendStatus(result.data);
+
+        } else if (result.functionName === 'newConn') {
+
+          userList[socket.id] = {name: result.data, color: randomColor()};
+
+          newConn(result.data);
         }
-
-        //If an existing user record is found, check the password
-        if (response.length == 1) {
-
-          //If the provided password is correct,
-          //allow access and add user to connected list
-          if (crypto.SHA256(response[0].salt + data.pass).toString() === response[0].pass) {
-
-            userList[socket.id] = {name: response[0].name, color: randomColor()};
-
-            newConn(response[0].name);
-
-          //Else deny access and request another attempt
-          } else {
-
-            sendStatus({category: "alert-danger", message: 'Invalid Login'});
-          }
-
-        //If a user is not found, create a salt, hash the password
-        //and create a new user record with provided information
-        } else {
-
-          var salt = crypto.lib.WordArray.random(256/8).toString();
-
-          var hash = crypto.SHA256(salt + data.pass).toString();
-
-          collectionUsers.insert({name: data.name, pass: hash, salt: salt, name_lower: data.name.toLowerCase()});
-
-          userList[socket.id] = {name: data.name, color: randomColor()};
-
-          newConn(data.name);
-        }
-
       });
 
     });
@@ -136,7 +109,8 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
     socket.on('disconnect', function () {
 
       //Checks if the user disconnecting has logged in, if not, no action needed
-      if (userList[socket.id].name != undefined) {
+      if (userList[socket.id].name !== undefined) {
+
         collectionServer.insert({socketID: socket.id, name: userList[socket.id].name, message: 'Disconnect', date: new Date().toString()});
         io.emit('disconnect', userList[socket.id]);
         delete userList[socket.id];
