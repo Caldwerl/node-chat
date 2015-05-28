@@ -29,13 +29,15 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
     throw err;
   }
 
+  var collectionChat = db.collection('chatLog');
+  var collectionServer = db.collection('serverLog');
+  var collectionUsers = db.collection('users');
+
   io.on('connection', function (socket) {
 
-    var collectionChat = db.collection('chatLog');
-    var collectionServer = db.collection('serverLog');
-    var collectionUsers = db.collection('users');
+    var loggedIn = false;
 
-    //Function for setting the status alert
+    //Function for setting the status alert on current socket
     var sendStatus = function (data) {
       socket.emit('status', data);
     };
@@ -109,7 +111,7 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
           if (checkUsers(userList, result.data)) {
 
             userList[socket.id] = {name: result.data, color: randomColor()};
-
+            loggedIn = true;
             newConn(result.data);
           } else {
 
@@ -133,7 +135,7 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
     socket.on('disconnect', function () {
 
       //Checks if the user disconnecting has logged in, if not, no action needed
-      if (userList[socket.id].name !== undefined) {
+      if (loggedIn) {
 
         collectionServer.insert({socketID: socket.id, name: userList[socket.id].name, message: 'Disconnect', date: new Date().toString()});
         io.emit('disconnect', userList[socket.id]);
@@ -143,7 +145,6 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
     });
   });
 });
-
 
 server.listen(port, function() {
 
