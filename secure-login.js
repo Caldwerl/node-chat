@@ -8,7 +8,7 @@ module.exports = function (collectionUsers, data, callback) {
   collectionUsers.find({name_lower: data.name.toLowerCase()}).toArray(function (err, response) {
 
     if (err) {
-        callback(null, {functionName: "sendStatus", data: {category: "alert-danger", message: 'Error on DB'}});
+        callback(err, null);
     }
 
     //If an existing user record is found, check the password

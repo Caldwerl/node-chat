@@ -45,6 +45,19 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
       io.emit('conn update', data);
     };
 
+    //Function to check current users logged in against new login request
+    var checkUsers = function (userList, newUser) {
+
+      for (var user in userList) {
+
+        if (userList[user].name === newUser) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
     //Function for new connection
     var newConn = function (data) {
 
@@ -82,15 +95,26 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
 
       secureLogin(collectionUsers, data, function (err, result) {
 
+        if (err) {
+          console.log(err);
+          sendStatus({category: "alert-danger", message: 'Error on DB'});
+        }
+
         if (result.functionName === 'sendStatus') {
 
           sendStatus(result.data);
 
         } else if (result.functionName === 'newConn') {
 
-          userList[socket.id] = {name: result.data, color: randomColor()};
+          if (checkUsers(userList, result.data)) {
 
-          newConn(result.data);
+            userList[socket.id] = {name: result.data, color: randomColor()};
+
+            newConn(result.data);
+          } else {
+
+            sendStatus({category: "alert-danger", message: 'User already logged in'});
+          }
         }
       });
 
