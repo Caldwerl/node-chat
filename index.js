@@ -1,3 +1,5 @@
+"use strict";
+
 var socket = io();
 
 var $name = $('#login-name');
@@ -56,13 +58,13 @@ socket.on('populate names', function (userList) {
 
 socket.on('chat message', function (data){
 
-  if(data.length != undefined){
+  if(data.length !== undefined){
 
     for (var i = 0; i < data.length; i++) {
 
       $chat.prepend($('<li>').text(data[i].name).append($('<span>').text(": " + data[i].message)));
     }
-  } else if (data.message != undefined) {
+  } else if (data.message !== undefined) {
 
     $chat.prepend($('<li>').text(data.name).css('color', data.color).append($('<span>').text(": " + data.message)));
   }

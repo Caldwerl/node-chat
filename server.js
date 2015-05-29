@@ -7,8 +7,6 @@ var favicon = require('serve-favicon');
 var secureLogin = require('./secure-login');
 var randomColor = require('./random-color');
 
-'use strict';
-
 var port = 8080;
 var userList = {};
 var userCount = 0;
@@ -24,6 +22,8 @@ app.get('/', function (request, response) {
 });
 
 mongo.connect('mongodb://localhost/chat', function (err, db) {
+
+  "use strict";
 
   if (err) {
     throw err;
@@ -58,7 +58,7 @@ mongo.connect('mongodb://localhost/chat', function (err, db) {
       }
 
       return true;
-    }
+    };
 
     //Function for new connection
     var newConn = function (data) {

@@ -1,8 +1,7 @@
 var crypto = require("crypto-js");
 
-'use strict';
-
 module.exports = function (collectionUsers, data, callback) {
+  "use strict";
 
   //Check the user collection for any matching records
   collectionUsers.find({name_lower: data.name.toLowerCase()}).toArray(function (err, response) {
@@ -41,5 +40,4 @@ module.exports = function (collectionUsers, data, callback) {
 
   });
 
-}
-
+};

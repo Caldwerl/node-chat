@@ -1,7 +1,6 @@
-'use strict';
-
 //Function to create a random hex color value for user names
 module.exports = function () {
+  "use strict";
 
   var hue = Math.random();
   var goldRatio = 0.618033988749895;
@@ -58,4 +57,4 @@ module.exports = function () {
   blue = Math.floor(blue * 256).toString(16);
 
   return '#' + red + green + blue;
-}
+};
