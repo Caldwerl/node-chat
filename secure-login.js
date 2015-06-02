@@ -1,6 +1,7 @@
 var crypto = require("crypto-js");
 
 module.exports = function (collectionUsers, data, callback) {
+
   "use strict";
 
   //Check the user collection for any matching records

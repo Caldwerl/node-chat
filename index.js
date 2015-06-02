@@ -1,5 +1,3 @@
-"use strict";
-
 var socket = io();
 
 var $name = $('#login-name');
@@ -21,6 +19,8 @@ var alertCur;
 
 $msgForm.submit(function () {
 
+  "use strict";
+
   if (!whitespacePattern.test($msg.val())) {
 
     socket.emit('chat message', ({name: $dispNameTxt.text(), message: $msg.val()}));
@@ -32,6 +32,8 @@ $msgForm.submit(function () {
 });
 
 $loginForm.submit(function () {
+
+  "use strict";
 
   if (!whitespacePattern.test($name.val()) && !whitespacePattern.test($pass.val())) {
 

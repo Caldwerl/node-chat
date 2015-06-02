@@ -1,5 +1,6 @@
 //Function to create a random hex color value for user names
 module.exports = function () {
+
   "use strict";
 
   var hue = Math.random();
